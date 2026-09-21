@@ -1,0 +1,6 @@
+test.pca <- PCA(test[,-3], graph = FALSE)
+fviz_pca_biplot(test.pca, 
+                col.ind = test$Day, palette =  c("#CD0BBC", "#2297E6","#61D04F"), 
+                 addEllipses = TRUE, label = "var",
+                 col.var = "black", repel = TRUE,
+                legend.title = "Day")
