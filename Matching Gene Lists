@@ -1,0 +1,11 @@
+# read the gene lists file
+geneset <- read_excel("Gene set list.xlsx")
+
+# read one specific list from the gene lists file
+ListA <- geneset$ListA
+
+#subsetting
+ResultListA <- result[(result$Gene_name) %in% ListA, ]
+
+#output file
+write.csv(ResultListA, 'ResultListA.csv')
