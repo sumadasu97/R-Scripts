@@ -1,0 +1,8 @@
+# Heatmap For Comparison
+rownames(countData) <- countData$Genes
+geneExp_matrix <- as.matrix(countData[2:3])
+dev
+pheatmap(geneExp_matrix,fontsize = 4,cellwidth =24,cellheight= 4,main = "pheatmap default")
+png('heatmap.png',width=6,height=6,units='in',res=300) # new [heatmap with imporved resolution)
+pheatmap(geneExp_matrix)
+pheatmap(geneExp_matrix,scale="row",cex=0.8,cluster_cols = F) #better resolution pheatmap
