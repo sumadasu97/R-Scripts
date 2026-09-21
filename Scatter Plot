@@ -1,0 +1,20 @@
+#Scatter plot with abline and legend
+x= count$x
+y=count$y
+plot(x, y, pch = 19,col=c("red","blue"),xlab = "Sham",ylab = "Vax",xlim = c(-5,5),cex=1.4)
+abline(reg_model, col="steelblue")
+legend("topleft",c("Sham","Vax"),cex=.8,col=c("red","blue"),pch=c(19,19),text.font=4,  bg='lightblue')
+
+# scatter plot for each group
+> plot(test$AE, 
+        pch = 16, 
+      col = factor(test$Days))
+# boxplots
+> parameter <- boxplot(test$AE ~ test$Day,
+                     xlab="Day", 
+                      ylab="AE",
+                      main="Study 2 Lung AE",col = c("blue","red","green"))
+> parameter <- boxplot(test$IM ~ test$Day,
+                      xlab="Day",
+                   ylab="IM",
+                      main="Study 2 Lung IM",col = c("blue","red","green"))
