@@ -1,0 +1,1 @@
+rmarkdown::render("your_script_name.R", output_format = "pdf_document")
