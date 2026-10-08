@@ -1,0 +1,118 @@
+library(shiny)
+library(ggplot2)
+library(readxl)
+library(dplyr)
+library(ggrepel) # Required for non-overlapping gene labels
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Interactive Volcano Plot Generator"),
+  
+  sidebarLayout(
+    sidebarPanel(
+      # File input supporting both CSV and Excel
+      fileInput("file", "Choose CSV or Excel File",
+                accept = c(".csv", ".xlsx", ".xls")),
+      
+      # Dynamic UI elements that appear after file is uploaded
+      uiOutput("col_selectors"),
+      
+      tags$hr(),
+      
+      # Threshold adjustments
+      numericInput("p_thresh", "P-value Threshold", value = 0.05, min = 0, max = 1, step = 0.01),
+      numericInput("logFC_thresh", "Log2 Fold Change Threshold", value = 1, min = 0, step = 0.1),
+      
+      # Control for labeling genes
+      numericInput("num_labels", "Number of top genes to label", value = 10, min = 0)
+    ),
+    
+    mainPanel(
+      plotOutput("volcano_plot", height = "600px")
+    )
+  )
+)
+
+# Define Server Logic
+server <- function(input, output, session) {
+  
+  # Reactive expression to read the data securely
+  raw_data <- reactive({
+    req(input$file)
+    ext <- tools::file_ext(input$file$name)
+    
+    switch(ext,
+           csv = read.csv(input$file$datapath, stringsAsFactors = FALSE),
+           xlsx = read_excel(input$file$datapath),
+           xls = read_excel(input$file$datapath),
+           validate("Invalid file; Please upload a .csv, .xlsx, or .xls file")
+    )
+  })
+  
+  # Generate column selectors dynamically based on the uploaded dataset
+  output$col_selectors <- renderUI({
+    df <- raw_data()
+    cols <- colnames(df)
+    
+    tagList(
+      selectInput("gene_col", "Select Gene Name Column", choices = cols),
+      selectInput("logFC_col", "Select Log2 Fold Change Column", choices = cols),
+      selectInput("p_col", "Select P-value Column", choices = cols)
+    )
+  })
+  
+  # Generate the Volcano Plot
+  output$volcano_plot <- renderPlot({
+    req(raw_data(), input$gene_col, input$logFC_col, input$p_col)
+    
+    # Process dataset based on user selections
+    df <- raw_data() %>%
+      rename(
+        Gene = !!sym(input$gene_col),
+        Log2FC = !!sym(input$logFC_col),
+        PValue = !!sym(input$p_col)
+      ) %>%
+      # Ensure numeric values and remove rows missing vital stats
+      filter(!is.na(Log2FC) & !is.na(PValue) & PValue > 0) %>%
+      mutate(NegLog10P = -log10(PValue))
+    
+    # Categorize genes into Up, Down, or Not Significant
+    df <- df %>%
+      mutate(Significance = case_when(
+        Log2FC >= input$logFC_thresh & PValue <= input$p_thresh ~ "Up-regulated",
+        Log2FC <= -input$logFC_thresh & PValue <= input$p_thresh ~ "Down-regulated",
+        TRUE ~ "Not Significant"
+      ))
+    
+    # Determine which genes to label (ranking by lowest p-value among significant ones)
+    df_labels <- df %>%
+      filter(Significance != "Not Significant") %>%
+      arrange(PValue) %>%
+      head(input$num_labels)
+    
+    # Build the ggplot
+    p <- ggplot(df, aes(x = Log2FC, y = NegLog10P, color = Significance)) +
+      geom_point(alpha = 0.6, size = 2) +
+      scale_color_manual(values = c("Up-regulated" = "firebrick", 
+                                    "Down-regulated" = "dodgerblue4", 
+                                    "Not Significant" = "gray")) +
+      # Threshold lines
+      geom_vline(xintercept = c(-input$logFC_thresh, input$logFC_thresh), linetype = "dashed", color = "black") +
+      geom_hline(yintercept = -log10(input$p_thresh), linetype = "dashed", color = "black") +
+      # Smart labels that do not overlap data points
+      geom_text_repel(data = df_labels, aes(label = Gene), 
+                      color = "black", size = 4, max.overlaps = 20) +
+      labs(
+        title = "Volcano Plot",
+        x = expression(log[2]~"Fold Change"),
+        y = expression(-log[10]~"P-value")
+      ) +
+      theme_minimal(base_size = 14) +
+      theme(legend.position = "bottom")
+    
+    print(p)
+  })
+}
+
+# Run the Application 
+shinyApp(ui = ui, server = server)
