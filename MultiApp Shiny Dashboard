@@ -1,0 +1,123 @@
+library(shiny)
+library(bslib)
+library(ggplot2)
+
+# ==============================================================================
+# APP 1 MODULE: Interactive Plotter (Using mtcars)
+# ==============================================================================
+app1_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    card(
+      card_header("METHYLATION PIPELINE"),
+      layout_sidebar(
+        sidebar = sidebar(
+          selectInput(ns("var_x"), "X-Axis Variable", choices = names(mtcars), selected = "wt"),
+          selectInput(ns("var_y"), "Y-Axis Variable", choices = names(mtcars), selected = "mpg")
+        ),
+        plotOutput(ns("plot"))
+      )
+    )
+  )
+}
+
+app1_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    output$plot <- renderPlot({
+      ggplot(mtcars, aes_string(x = input$var_x, y = input$var_y)) +
+        geom_point(color = "#007bc2", size = 3) +
+        theme_minimal()
+    })
+  })
+}
+
+# ==============================================================================
+# APP 2 MODULE: Data Summary App (Using iris)
+# ==============================================================================
+app2_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    card(
+      card_header("Volcano Plots"),
+      layout_sidebar(
+        sidebar = sidebar(
+          numericInput(ns("rows"), "Rows to preview:", value = 10, min = 1, max = 150)
+        ),
+        tableOutput(ns("table"))
+      )
+    )
+  )
+}
+
+app2_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    output$table <- renderTable({
+      head(iris, input$rows)
+    })
+  })
+}
+
+# ==============================================================================
+# APP 3 MODULE: Text Generator
+# ==============================================================================
+app3_ui <- function(id) {
+  ns <- NS(id)
+  tagList(
+    card(
+      card_header("DESEQ PIPELINE"),
+      layout_sidebar(
+        sidebar = sidebar(
+          textInput(ns("user_text"), "Type something:", value = "Hello World!")
+        ),
+        textOutput(ns("display_text"))
+      )
+    )
+  )
+}
+
+app3_server <- function(id) {
+  moduleServer(id, function(input, output, session) {
+    output$display_text <- renderText({
+      paste("You typed:", input$user_text)
+    })
+  })
+}
+
+# ==============================================================================
+# MASTER DASHBOARD UI & SERVER
+# ==============================================================================
+ui <- page_navbar(
+  title = "Master Applications Hub",
+  theme = bs_theme(version = 5, bootswatch = "minty"), # Modern Bootstrap 5 layout
+  
+  # Tab 1 houses App 1
+  nav_panel(
+    title = "METHYLATION PIPELINE",
+    icon = icon("chart-line"),
+    app1_ui("plot_app")
+  ),
+  
+  # Tab 2 houses App 2
+  nav_panel(
+    title = "Volcano Plots",
+    icon = icon("table"),
+    app2_ui("summary_app")
+  ),
+  
+  # Tab 3 houses App 3
+  nav_panel(
+    title = "DESEQ PIPELINE",
+    icon = icon("font"),
+    app3_ui("text_app")
+  )
+)
+
+server <- function(input, output, session) {
+  # Call each independent app logic module
+  app1_server("plot_app")
+  app2_server("summary_app")
+  app3_server("text_app")
+}
+
+# Run the unified multi-app dashboard
+shinyApp(ui, server)
