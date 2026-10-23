@@ -1,0 +1,76 @@
+library(shiny)
+library(ggplot2) # Or whichever libraries you use for your plots
+
+# ==========================================
+# 1. USER INTERFACE (UI)
+# ==========================================
+ui <- fluidPage(
+  titlePanel("Multi-Plot Analytics Portal"),
+  
+  # Tab layout to separate the two applications
+  tabsetPanel(
+    
+    # --- VOLCANO PLOT TAB ---
+    tabPanel("Volcano Plot Generator",
+      sidebarLayout(
+        sidebarPanel(
+          h3("Volcano Inputs"),
+          # Insert your existing Volcano UI controls here
+          numericInput("p_val_cutoff", "P-Value Cutoff:", value = 0.05, min = 0, max = 1),
+          numericInput("log_fc_cutoff", "Log2 Fold Change Cutoff:", value = 1)
+        ),
+        mainPanel(
+          plotOutput("volcanoPlot")
+        )
+      )
+    ),
+    
+    # --- HEATMAP TAB ---
+    tabPanel("Heatmap Generator",
+      sidebarLayout(
+        sidebarPanel(
+          h3("Heatmap Inputs"),
+          # Insert your existing Heatmap UI controls here
+          selectInput("clustering_metric", "Clustering Distance:", 
+                      choices = c("euclidean", "maximum", "manhattan")),
+          checkboxInput("show_row_names", "Show Row Names", value = TRUE)
+        ),
+        mainPanel(
+          plotOutput("heatmapPlot")
+        )
+      )
+    )
+    
+  )
+)
+
+# ==========================================
+# 2. SERVER LOGIC
+# ==========================================
+server <- function(input, output, session) {
+  
+  # --- VOLCANO PLOT SERVER LOGIC ---
+  # Paste your existing Volcano logic/reactive expressions here
+  output$volcanoPlot <- renderPlot({
+    # Example placeholder code - replace with your actual volcano code
+    # Uses input$p_val_cutoff and input$log_fc_cutoff
+    ggplot(mtcars, aes(wt, mpg)) + 
+      geom_point() + 
+      ggtitle("Your Volcano Plot Will Render Here")
+  })
+  
+  # --- HEATMAP SERVER LOGIC ---
+  # Paste your existing Heatmap logic/reactive expressions here
+  output$heatmapPlot <- renderPlot({
+    # Example placeholder code - replace with your actual heatmap code
+    # Uses input$clustering_metric and input$show_row_names
+    heatmap(as.matrix(mtcars[,1:4]), 
+            distfun = function(x) dist(x, method = input$clustering_metric))
+  })
+  
+}
+
+# ==========================================
+# 3. RUN APPLICATION
+# ==========================================
+shinyApp(ui = ui, server = server)
